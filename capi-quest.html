@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capi-Quest</title>
+<style>
+  :root{--bg:#0d1f17;--card:#1c3a2a;--panel:#122a1e;--line:#4d7c5a;--capy:#c98b52;--yellow:#ffd166;--pink:#d9622b;--cyan:#22d3ee;--green:#22c55e;--red:#ef4444;--text:#fff;--muted:#b7d3bf}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(circle at top,#2f6b45,var(--bg) 60%) fixed;color:var(--text);font-family:system-ui,"Segoe UI",sans-serif;min-height:100vh;padding:12px}
+  header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+  h1{font-size:clamp(1.4rem,3vw,2.4rem);color:var(--yellow);text-shadow:3px 3px 0 var(--pink);text-transform:uppercase}
+  h2{font-size:1.05rem;color:var(--yellow);margin-bottom:8px}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  button,select,input,textarea{font:inherit;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--text);padding:8px 12px}
+  button{cursor:pointer;font-weight:700}
+  button:hover:not(:disabled){filter:brightness(1.3)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  :focus-visible{outline:3px solid var(--cyan)}
+  textarea{width:100%;min-height:110px;font-family:monospace;font-size:.85rem}
+  .yellow{background:var(--yellow);color:#2a1a0c;border-color:var(--yellow)}
+  .pink{background:var(--pink);border-color:var(--pink)}
+  .green{background:#15803d;border-color:var(--green)}
+  .red{background:#b91c1c;border-color:var(--red)}
+  .big{font-size:1.2rem;padding:14px 20px}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px}
+  .badge{padding:6px 12px;border-radius:99px;font-weight:700;background:#52525b;font-size:.85rem}
+  .badge.on{background:#15803d}.badge.err{background:#b91c1c}.badge.sim{background:#0e7490}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;align-items:start}
+  main>section,aside{display:flex;flex-direction:column;gap:12px;min-width:0}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  #theme{color:var(--cyan);font-weight:800;text-transform:uppercase}
+  #question{font-size:clamp(1.5rem,3.2vw,3rem);margin:10px 0 18px;line-height:1.2;overflow-wrap:anywhere}
+  #options{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+  .opt{background:var(--panel);border:3px solid var(--line);border-radius:12px;padding:14px;font-size:clamp(1.1rem,2vw,1.7rem);overflow-wrap:anywhere}
+  .opt b{color:var(--yellow);margin-right:10px}
+  .opt.right{background:#15803d;border-color:#86efac}
+  #turn{text-align:center;font-size:clamp(1.2rem,2.5vw,2.2rem);font-weight:900;padding:14px;border-radius:14px;border:4px solid var(--line);background:var(--panel)}
+  #turn.flash-ok{animation:ok 1s}#turn.flash-bad{animation:bad 1s}
+  @keyframes ok{30%{background:var(--green);transform:scale(1.04)}}
+  @keyframes bad{30%{background:var(--red);transform:translateX(10px)}}
+  .pl{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:10px;padding:10px;margin-bottom:6px;border-left:8px solid}
+  .pl .name{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:700}
+  .pl.active{outline:4px solid var(--yellow)}
+  .pl.p1{background:linear-gradient(90deg,#8a6d00,var(--panel))}
+  .pl.p2{background:linear-gradient(90deg,#64748b,var(--panel))}
+  .pl.p3{background:linear-gradient(90deg,#92400e,var(--panel))}
+  .score{font-size:1.5rem;font-weight:900;color:var(--yellow);text-align:right}
+  .score small{display:block;font-size:.7rem;color:var(--muted)}
+  #log{height:150px;overflow:auto;background:#000;color:#4ade80;font:12px monospace;padding:8px;border-radius:8px;white-space:pre-wrap}
+  summary{cursor:pointer;font-weight:800;color:var(--yellow)}
+  details>*:not(summary){margin-top:10px}
+  dialog{margin:auto;width:min(720px,96vw);max-height:92vh;background:var(--card);color:var(--text);border:3px solid var(--yellow);border-radius:16px;padding:18px}
+  dialog::backdrop{background:#000c}
+  .error{color:#fca5a5;font-weight:700;min-height:1.4em}
+  .hint{color:var(--muted);font-size:.85rem}
+  .brand{display:flex;gap:12px;align-items:center}
+  .brand small{color:var(--muted);font-weight:700}
+  .capy svg{display:block;width:76px;height:auto;fill:var(--capy)}
+  [hidden]{display:none!important}
+  body.player>header,body.player>main{display:none}
+  #playerPage{display:flex;flex-direction:column;gap:14px}
+  #playerPage .brand{justify-content:center}
+  #playerPage h1{font-size:clamp(2rem,5vw,4rem)}
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,28vw);gap:14px;align-items:start}
+  @media(max-width:900px){.stage{grid-template-columns:1fr}}
+  .stage section{display:flex;flex-direction:column;gap:14px;min-width:0}
+  #vQuestion{font-size:clamp(1.6rem,3.6vw,3.4rem);margin:10px 0 18px;overflow-wrap:anywhere}
+  #vOptions{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+  #vTurn{text-align:center;font-size:clamp(1.3rem,3vw,2.6rem);font-weight:900;padding:18px;border-radius:14px;border:4px solid var(--line);background:var(--panel)}
+  #walker{position:fixed;inset:0;z-index:5;pointer-events:none;overflow:hidden;background:#000a}
+  #walker b{position:absolute;top:25%;width:100%;text-align:center;font-size:clamp(2rem,6vw,5rem);color:var(--yellow);padding:0 12px}
+  #walker .capy{position:absolute;bottom:18%;left:0;animation:walk 3s linear forwards}
+  #walker .capy svg{width:clamp(200px,28vw,420px);animation:hop .3s steps(2) infinite}
+  @keyframes walk{from{transform:translateX(-110%)}to{transform:translateX(100vw)}}
+  @keyframes hop{50%{transform:translateY(-10px)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="capy"></span><div><h1>Capi-Quest</h1><small>Passa ou Repassa · Página do gestor</small></div></div>
+  <div class="row presenter">
+    <span id="status" class="badge">Desconectado</span>
+    <select id="baud" aria-label="Baud rate"><option>9600</option><option>19200</option><option>57600</option><option>115200</option></select>
+    <select id="ports" aria-label="Porta serial"></select>
+    <button id="btnConnect" class="yellow">Conectar</button>
+    <button id="btnPlayers">👥 Jogadores</button>
+  </div>
+  <button id="btnPlayerPage" class="yellow">🖥 Abrir página dos jogadores</button>
+</header>
+
+<main>
+  <section>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><span id="theme"></span><span id="counter" class="hint"></span></div>
+      <div id="question"></div>
+      <div id="options"></div>
+    </div>
+    <div id="turn" aria-live="polite"></div>
+
+    <div class="card presenter">
+      <h2>Painel do apresentador</h2>
+      <div class="row" id="pickTurn"></div>
+      <div class="row" style="margin-top:10px">
+        <label>Passar para <select id="target"></select></label>
+        <button id="btnPass" class="big pink">↪ PASSA (P)</button>
+        <button id="btnRepass" class="big pink">↩ REPASSA (R)</button>
+        <button id="btnRight" class="big green">✔ CERTO (C)</button>
+        <button id="btnWrong" class="big red">✘ ERRADO (E)</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="btnAir" class="yellow">▶ Colocar no ar</button>
+        <button id="btnReveal">👁 Revelar (Espaço)</button>
+        <button id="btnNext">⏭ Próxima (N)</button>
+        <button id="btnRedo">↺ Repetir rodada</button>
+        <button id="btnEnd">🏁 Encerrar jogo</button>
+      </div>
+    </div>
+
+    <details class="card presenter" id="simBox" open>
+      <summary>🧪 Simulação (sem hardware)</summary>
+      <div class="row" id="simButtons"></div>
+      <p class="hint">Estes botões geram as mesmas mensagens que o Arduino enviaria. Teclas 1 a 4 acionam as buzinas.</p>
+    </details>
+
+    <details class="card presenter">
+      <summary>📚 Banco de perguntas</summary>
+      <div class="row"><select id="qList" style="flex:1;min-width:0" aria-label="Perguntas"></select><button id="btnGo">Ir para</button><button id="btnDel" class="red">Excluir</button></div>
+      <form id="qForm" class="row">
+        <input name="tema" placeholder="Tema" required>
+        <input name="enunciado" placeholder="Enunciado" required style="flex:1;min-width:220px">
+        <input name="a" placeholder="Alternativa A" required><input name="b" placeholder="Alternativa B" required>
+        <input name="c" placeholder="Alternativa C" required><input name="d" placeholder="Alternativa D" required>
+        <label>Correta <select name="correta"><option>A</option><option>B</option><option>C</option><option>D</option></select></label>
+        <button class="yellow">Adicionar</button>
+      </form>
+      <textarea id="json" placeholder='[{"tema":"Geografia","enunciado":"Capital do Brasil?","alternativas":["Rio","Brasília","Salvador","Recife"],"correta":"B"}]'></textarea>
+      <div class="row"><button id="btnImport">Importar JSON</button><button id="btnExportQ">Mostrar banco em JSON</button></div>
+      <div class="error" id="qError"></div>
+    </details>
+
+    <details class="card presenter">
+      <summary>⚙️ Regras e dados</summary>
+      <div class="row">
+        <label>Pontos por acerto <input type="number" id="cfgPoints" min="1" style="width:80px"></label>
+        <label>Penalidade por erro <input type="number" id="cfgPenalty" min="0" style="width:80px"></label>
+        <label>Tempo (s, 0 = sem) <input type="number" id="cfgTime" min="0" max="99" style="width:80px"></label>
+        <label><input type="checkbox" id="cfgMulti"> Passa vale 2x, Repassa vale 3x</label>
+        <label><input type="checkbox" id="cfgSound"> Som no navegador</label>
+      </div>
+      <button id="btnWipe" class="red">🗑 Limpar tudo</button>
+    </details>
+
+    <details class="card presenter">
+      <summary>🖥 Console serial</summary>
+      <div id="log"></div>
+      <form id="sendForm" class="row"><input id="sendInput" placeholder="Ex.: PING" style="flex:1"><button>Enviar</button><button type="button" id="btnClearLog">Limpar</button></form>
+    </details>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>🏆 Ranking</h2>
+      <div id="ranking"></div>
+      <div class="row presenter"><button id="btnZero">Zerar placar</button><button id="btnCopy">Copiar</button><button id="btnCsv">Exportar CSV</button></div>
+    </div>
+  </aside>
+</main>
+
+<div id="playerPage" hidden>
+  <div class="brand"><span class="capy"></span><div><h1>Capi-Quest</h1><small id="vWait">Aguardando o gestor do jogo…</small></div></div>
+  <div class="stage">
+    <section>
+      <div class="card">
+        <div class="row" style="justify-content:space-between"><span id="vTheme" style="font-weight:800;text-transform:uppercase"></span><span id="vCounter" class="hint"></span></div>
+        <div id="vQuestion">Preparem-se…</div>
+        <div id="vOptions"></div>
+      </div>
+      <div id="vTurn" aria-live="polite">Bem-vindos!</div>
+    </section>
+    <aside><div class="card"><h2 id="vRankTitle">🏆 Ranking</h2><div id="vRanking"></div></div></aside>
+  </div>
+  <div style="text-align:center"><button id="btnFull">⛶ Tela cheia</button></div>
+  <div id="walker" hidden><b></b><span class="capy"></span></div>
+</div>
+
+<dialog id="dlgPlayers">
+  <h2>Cadastro de jogadores</h2>
+  <form id="pForm" class="row">
+    <input id="pName" placeholder="Nome ou apelido" maxlength="24" style="flex:1;min-width:160px">
+    <select id="pEmoji" aria-label="Avatar"><option>🦊</option><option>🐼</option><option>🦁</option><option>🐸</option><option>🐙</option><option>🦄</option><option>🤖</option><option>👾</option></select>
+    <input type="color" id="pColor" value="#ff2e88" aria-label="Cor" style="height:42px;width:56px">
+    <select id="pChannel" aria-label="Botão do Arduino"></select>
+    <button class="yellow" id="pSave">Adicionar</button>
+  </form>
+  <div class="error" id="pError"></div>
+  <div id="pList"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button id="btnCloseP">Fechar</button>
+    <button id="btnStart" class="yellow big">🚀 Iniciar jogo</button>
+  </div>
+</dialog>
+
+<dialog id="dlgEnd">
+  <h2>🏁 Resultado final</h2>
+  <div id="final"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button id="btnCopy2">Copiar resultado</button>
+    <button id="btnCloseE" class="yellow">Fechar</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+/* =================== PROTOCOLO SERIAL (uma mensagem por linha, '\n') ===================
+   Web -> Arduino
+     PING          teste de conexão
+     RESET         apaga tudo e desarma as buzinas
+     QUESTION      pergunta no ar: arma as buzinas
+     ARM           rearma as buzinas (sem som)
+     TURN:n        vez do canal n (0 = jogador sem botão)
+     PASSA:n       passou; a vez agora é do canal n
+     REPASSA:n     repassou; a vez agora é do canal n
+     CORRECT:n     acerto
+     WRONG:n       erro
+     END           fim de jogo
+     TIME:s        segundos restantes (0 = tempo esgotado)
+     SCORE:a,b     pontos dos jogadores dos botões 1 e 2 (LCD)
+     BYE           página desconectando: Arduino volta ao modo sozinho
+   Arduino -> Web
+     READY, PONG, BTN:n, PASSA, REPASSA, CERTO, ERRADO, ZERAR, LOG:texto
+   ======================================================================================= */
+
+const KEY = "passaRepassa.v1";
+const IS_PLAYER_PAGE = location.hash === "#jogadores";
+const MAX_CHANNELS = 4;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const Q = (tema, enunciado, alternativas, correta) => ({tema, enunciado, alternativas, correta});
+const SAMPLE = [
+  Q("Geografia","Qual é a capital da Austrália?",["Sydney","Melbourne","Camberra","Perth"],"C"),
+  Q("Tecnologia","O que significa a sigla HTML?",["HyperText Markup Language","HighTech Modern Language","Hyper Transfer Mail Link","Home Tool Markup Language"],"A"),
+  Q("Ciências","Qual planeta é conhecido como Planeta Vermelho?",["Vênus","Marte","Júpiter","Saturno"],"B"),
+  Q("Programação","Em C, qual função imprime texto na tela?",["echo()","print()","console.log()","printf()"],"D"),
+  Q("História","Em que ano foi proclamada a Independência do Brasil?",["1500","1822","1889","1888"],"B"),
+  Q("Arduino","Qual função do Arduino roda repetidamente?",["setup()","main()","loop()","repeat()"],"C")
+];
+
+const defaults = () => ({players:[], questions:structuredClone(SAMPLE), index:0,
+  cfg:{points:1, penalty:0, multi:false, time:10, sound:true, baud:"9600"}});
+
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(KEY));
+    if(d && Array.isArray(d.players) && Array.isArray(d.questions))
+      return {...defaults(), ...d, cfg:{...defaults().cfg, ...d.cfg}};
+  }catch(e){}
+  return defaults();
+}
+let db = load();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){ log("Aviso: não foi possível salvar."); } }
+
+/* Estado da rodada (não persiste) */
+const freshRound = () => ({phase:"idle", turn:null, from:null, passes:0, revealed:false, deltas:null, message:""});
+let round = freshRound();
+let editingId = null;
+let playerWindow = null, buzzId = 0, buzzName = "", gameOver = false;
+let lastScore = "";
+
+const player = id => db.players.find(p => p.id === id);
+const question = () => db.questions[db.index];
+
+/* ---------- Console e som ---------- */
+function log(text){
+  const el = $("log");
+  const lines = (el.textContent + new Date().toLocaleTimeString("pt-BR") + "  " + text + "\n").split("\n");
+  el.textContent = lines.slice(-200).join("\n");
+  el.scrollTop = el.scrollHeight;
+}
+let audio;
+function beep(freqs){
+  if(!db.cfg.sound) return;
+  try{
+    audio = audio || new AudioContext();
+    audio.resume();
+    freqs.forEach((f,i) => {
+      const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + i*.14;
+      o.type = "square"; o.frequency.value = f; g.gain.value = .08;
+      o.connect(g).connect(audio.destination); o.start(t); o.stop(t + .13);
+    });
+  }catch(e){}
+}
+
+/* ---------- Web Serial ---------- */
+let port = null, reader = null, reading = false, readLoopDone = null;
+let writeQueue = Promise.resolve();
+
+function setStatus(text, cls){ $("status").textContent = text; $("status").className = "badge " + (cls || ""); }
+
+async function listPorts(){
+  if(!("serial" in navigator)) return;
+  const ports = await navigator.serial.getPorts();
+  $("ports").innerHTML = '<option value="">Escolher nova porta…</option>' + ports.map((p,i) => {
+    const info = p.getInfo();
+    const id = info.usbVendorId ? " (USB " + info.usbVendorId.toString(16) + ":" + info.usbProductId.toString(16) + ")" : "";
+    return `<option value="${i}">Porta autorizada ${i+1}${id}</option>`;
+  }).join("");
+}
+
+async function connect(){
+  try{
+    const chosen = $("ports").value;
+    const selected = chosen === "" ? await navigator.serial.requestPort() : (await navigator.serial.getPorts())[chosen];
+    await selected.open({baudRate:Number($("baud").value)});
+    port = selected; reading = true;
+    setStatus("Conectado", "on");
+    $("btnConnect").textContent = "Desconectar";
+    $("simBox").open = false;
+    log("Porta aberta a " + $("baud").value + " baud. Aguardando READY…");
+    readLoopDone = readLoop();
+    setTimeout(() => send("PING"), 2000); // o Uno reinicia ao abrir a porta
+  }catch(e){
+    if(e.name === "NotFoundError"){ log("Nenhuma porta selecionada."); return; }
+    setStatus("Erro", "err");
+    log("Erro ao conectar: " + e.message + " (feche o Monitor Serial da Arduino IDE)");
+  }
+}
+
+async function readLoop(){
+  const decoder = new TextDecoder();
+  let buffer = "", failed = false;
+  try{
+    reader = port.readable.getReader();
+    while(reading){
+      const {value, done} = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, {stream:true});
+      const lines = buffer.split("\n");
+      buffer = lines.pop().slice(-200);
+      lines.forEach(l => handleLine(l.trim(), "RX"));
+    }
+  }catch(e){ failed = true; log("Erro de leitura: " + e.message); }
+  finally{ if(reader) reader.releaseLock(); reader = null; }
+  if(reading) disconnect(failed || true); // terminou sem o usuário pedir
+}
+
+async function disconnect(lost){
+  if(!port) return;
+  const old = port;
+  if(!lost) send("BYE");
+  reading = false; port = null;
+  try{ if(reader) await reader.cancel(); await readLoopDone; }catch(e){}
+  try{ await writeQueue; await old.close(); }catch(e){}
+  setStatus(lost ? "Erro: conexão perdida" : "Desconectado", lost ? "err" : "");
+  $("btnConnect").textContent = "Conectar";
+  log("Desconectado. A simulação continua disponível.");
+  listPorts();
+}
+
+function send(msg){
+  if(!msg.startsWith("TIME:")) log((port ? "TX → " : "TX (simulado) → ") + msg);
+  const target = port;
+  if(!target || !target.writable) return;
+  writeQueue = writeQueue.then(async () => {
+    const w = target.writable.getWriter();
+    try{ await w.write(new TextEncoder().encode(msg + "\n")); }
+    finally{ w.releaseLock(); }
+  }).catch(e => log("Erro de escrita: " + e.message));
+}
+
+/* Entrada única de eventos: serve ao Arduino e à simulação */
+function handleLine(line, source){
+  if(!line) return;
+  log(source + " ← " + line);
+  const btn = line.match(/^BTN:(\d+)$/);
+  if(btn) return buzz(Number(btn[1]));
+  if(line === "PASSA") return pass();
+  if(line === "REPASSA") return repass();
+  if(line === "CERTO") return answer(true);
+  if(line === "ERRADO") return answer(false);
+  if(line === "ZERAR") return zeroScores();
+  if(line === "READY" || line === "PONG") syncArduino();
+}
+
+/* Reenvia o estado atual quando o Arduino (re)inicia */
+function syncArduino(){
+  lastScore = ""; sendScore();
+  if(round.phase === "buzz") send("ARM");
+  else if(round.phase === "turn") send((round.passes ? "PASSA:" : "TURN:") + (player(round.turn)?.channel || 0));
+  else send("RESET");
+}
+
+/* ---------- Placar no LCD e timer ---------- */
+function sendScore(){
+  const pts = n => db.players.find(p => p.channel === n)?.score || 0;
+  const msg = "SCORE:" + pts(1) + "," + pts(2);
+  if(msg !== lastScore){ lastScore = msg; send(msg); }
+}
+function startTimer(){
+  round.deadline = db.cfg.time ? Date.now() + db.cfg.time * 1000 : 0;
+  round.left = db.cfg.time;
+  if(db.cfg.time) send("TIME:" + db.cfg.time);
+}
+/* Tempo esgotado: na primeira vez passa; depois disso conta como erro */
+setInterval(() => {
+  if(round.phase !== "turn" || !round.deadline) return;
+  const left = Math.max(0, Math.ceil((round.deadline - Date.now()) / 1000));
+  if(left === round.left) return;
+  round.left = left;
+  send("TIME:" + left);
+  if(left > 0){ if(left <= 3) beep([900]); return render(); }
+  round.deadline = 0;
+  if(round.passes === 0) pass(); else answer(false);
+}, 200);
+
+function zeroScores(){
+  gameOver = false;
+  db.players.forEach(p => { p.score = 0; p.hits = 0; });
+  db.index = 0; round = freshRound(); send("RESET"); save(); render();
+}
+
+/* ---------- Mecânica do jogo ---------- */
+function putOnAir(){
+  if(db.players.length < 2) return openPlayers("Cadastre pelo menos 2 jogadores.");
+  if(!question() || round.phase !== "idle") return;
+  gameOver = false;
+  round = {...freshRound(), phase:"buzz"};
+  send("QUESTION");
+  render();
+}
+
+function buzz(channel){
+  if(round.phase !== "buzz") return; // só o primeiro vale
+  const p = db.players.find(x => x.channel === channel);
+  if(!p){ log("Botão " + channel + " sem jogador."); send("ARM"); return; }
+  buzzId++; buzzName = p.name;
+  giveTurn(p.id);
+}
+
+function giveTurn(id){
+  if(round.phase !== "buzz" && round.phase !== "turn") return;
+  round.phase = "turn"; round.turn = id; round.from = null; round.passes = 0;
+  send("TURN:" + player(id).channel);
+  startTimer();
+  beep([880]);
+  render();
+}
+
+function pass(){
+  if(round.phase !== "turn" || round.passes !== 0) return;
+  const to = Number($("target").value);
+  if(!player(to) || to === round.turn) return;
+  round.from = round.turn; round.turn = to; round.passes = 1;
+  send("PASSA:" + player(to).channel);
+  startTimer();
+  beep([520,660]);
+  render();
+}
+
+function repass(){
+  if(round.phase !== "turn" || round.passes !== 1) return;
+  [round.turn, round.from] = [round.from, round.turn];
+  round.passes = 2;
+  send("REPASSA:" + player(round.turn).channel);
+  startTimer();
+  beep([660,520]);
+  render();
+}
+
+const roundValue = () => db.cfg.points * (db.cfg.multi ? round.passes + 1 : 1);
+
+function answer(ok){
+  if(round.phase !== "turn") return;
+  const p = player(round.turn);
+  const delta = ok ? roundValue() : -db.cfg.penalty;
+  p.score += delta;
+  if(ok) p.hits++;
+  round.deltas = {id:p.id, score:delta, hits:ok ? 1 : 0};
+  round.phase = "done";
+  round.revealed = round.revealed || ok;
+  round.message = ok ? `✅ ${p.name} acertou! +${delta}` : `❌ ${p.name} errou!` + (delta ? ` ${delta}` : "");
+  send((ok ? "CORRECT:" : "WRONG:") + p.channel);
+  beep(ok ? [660,880,1100] : [220,160]);
+  save(); render();
+  const el = $("turn");
+  el.classList.remove("flash-ok","flash-bad"); void el.offsetWidth;
+  el.classList.add(ok ? "flash-ok" : "flash-bad");
+}
+
+/* Desfaz os pontos da rodada e volta a pergunta ao ar */
+function redoRound(){
+  if(round.deltas){
+    const p = player(round.deltas.id);
+    if(p){ p.score -= round.deltas.score; p.hits -= round.deltas.hits; }
+  }
+  round = freshRound();
+  send("RESET");
+  save(); putOnAir(); render();
+}
+
+function nextQuestion(){
+  if(db.index >= db.questions.length - 1){
+    round.message = "Fim das perguntas. Adicione mais ou encerre o jogo.";
+    return render();
+  }
+  db.index++; round = freshRound(); save(); putOnAir(); render();
+}
+
+function endGame(){
+  round = freshRound(); gameOver = true; send("END"); render();
+  $("final").innerHTML = rankingHtml();
+  $("dlgEnd").showModal();
+}
+
+/* ---------- Ranking e exportação ---------- */
+function ranking(){
+  const list = [...db.players].sort((a,b) => b.hits - a.hits || b.score - a.score || a.name.localeCompare(b.name));
+  let pos = 0;
+  return list.map((p,i) => {
+    const prev = list[i-1];
+    if(!prev || prev.hits !== p.hits || prev.score !== p.score) pos = i + 1; // empate divide a posição
+    return {...p, pos};
+  });
+}
+function rankingHtml(){
+  if(!db.players.length) return '<p class="hint">Nenhum jogador cadastrado.</p>';
+  const medals = {1:"🥇",2:"🥈",3:"🥉"};
+  const started = db.players.some(p => p.hits || p.score);
+  return ranking().map(p => `
+    <div class="pl ${started && p.pos <= 3 ? "p" + p.pos : ""} ${p.id === round.turn && round.phase === "turn" ? "active" : ""}" style="border-left-color:${esc(p.color)}">
+      <span>${started && medals[p.pos] || p.pos + "º"}</span>
+      <span class="name">${esc(p.emoji)} ${esc(p.name)}</span>
+      <span class="score">${p.hits}<small>acertos · ${p.score} pts</small></span>
+    </div>`).join("");
+}
+const resultText = () => "Capi-Quest - Resultado\n" +
+  ranking().map(p => `${p.pos}º ${p.name}: ${p.hits} acerto(s), ${p.score} ponto(s)`).join("\n");
+
+async function copyResult(button){
+  const old = button.textContent;
+  try{ await navigator.clipboard.writeText(resultText()); button.textContent = "Copiado!"; }
+  catch(e){ prompt("Copie o resultado:", resultText().replace(/\n/g," | ")); }
+  setTimeout(() => button.textContent = old, 1500);
+}
+function exportCsv(){
+  // evita que um nome começando com = + - @ vire fórmula na planilha
+  const cell = v => '"' + String(v).replace(/^[=+\-@]/, "'$&").replace(/"/g,'""') + '"';
+  const rows = [["Posição","Nome","Acertos","Pontos"], ...ranking().map(p => [p.pos, cell(p.name), p.hits, p.score])];
+  const url = URL.createObjectURL(new Blob(["\ufeff" + rows.map(r => r.join(";")).join("\n")], {type:"text/csv"}));
+  const a = document.createElement("a");
+  a.href = url; a.download = "resultado-capi-quest.csv"; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ---------- Tela ---------- */
+function render(){
+  const q = question(), onAir = round.phase !== "idle";
+  $("theme").textContent = q && onAir ? q.tema : "";
+  $("counter").textContent = q ? `Pergunta ${db.index+1} de ${db.questions.length}` : "";
+  $("question").textContent = !q ? "O banco de perguntas está vazio." : onAir ? q.enunciado : "Preparem-se…";
+  $("options").innerHTML = q && onAir ? q.alternativas.map((alt,i) => {
+    const letter = "ABCD"[i];
+    return `<div class="opt ${round.revealed && letter === q.correta ? "right" : ""}"><b>${letter}</b>${esc(alt)}</div>`;
+  }).join("") : "";
+
+  const p = player(round.turn);
+  const label = ["VEZ DE", "PASSOU! VEZ DE", "REPASSOU! RESPONDE"][round.passes];
+  $("turn").textContent = round.message ||
+    (round.phase === "buzz" ? "🔔 Quem aperta primeiro?" :
+     round.phase === "turn" && p ? `${label} ${p.emoji} ${p.name} · vale ${roundValue()}${round.deadline ? " · ⏱ " + round.left + "s" : ""}` : "Aguardando o apresentador");
+  $("turn").style.borderColor = p && round.phase === "turn" ? p.color : "";
+
+  $("pickTurn").innerHTML = "<span>Dar a vez:</span>" + db.players.map(x =>
+    `<button data-turn="${x.id}" style="border-color:${esc(x.color)}" ${["buzz","turn"].includes(round.phase) ? "" : "disabled"}>${esc(x.emoji)} ${esc(x.name)}</button>`).join("");
+
+  const previous = Number($("target").value);
+  const others = db.players.filter(x => x.id !== round.turn);
+  $("target").innerHTML = others.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join("");
+  const after = db.players[(db.players.findIndex(x => x.id === round.turn) + 1) % db.players.length];
+  const wanted = others.some(x => x.id === previous) && previous !== after?.id && render.lastTurn === round.turn ? previous : after?.id;
+  if(others.some(x => x.id === wanted)) $("target").value = wanted;
+  render.lastTurn = round.turn;
+
+  const inTurn = round.phase === "turn";
+  $("btnPass").disabled = !(inTurn && round.passes === 0);
+  $("btnRepass").disabled = !(inTurn && round.passes === 1);
+  $("btnRight").disabled = $("btnWrong").disabled = !inTurn;
+  $("btnAir").disabled = onAir || !q;
+  $("btnReveal").disabled = !onAir || round.revealed;
+  $("btnNext").disabled = db.index >= db.questions.length - 1;
+  $("btnRedo").disabled = !onAir;
+
+  $("ranking").innerHTML = rankingHtml();
+  sendScore();
+  $("qList").innerHTML = db.questions.map((x,i) => `<option value="${i}">${i+1}. [${esc(x.tema)}] ${esc(x.enunciado)}</option>`).join("");
+  $("qList").value = db.index;
+
+  publish();
+
+  $("simButtons").innerHTML = [1,2,3,4].map(n => {
+    const owner = db.players.find(x => x.channel === n);
+    return `<button data-sim="BTN:${n}">🔔 ${n}${owner ? " · " + esc(owner.name) : ""}</button>`;
+  }).join("") + ["PASSA","REPASSA","CERTO","ERRADO","ZERAR"].map(c => `<button data-sim="${c}">${c}</button>`).join("");
+}
+
+/* ---------- Capivara em pixels (mesmo desenho do LCD) ---------- */
+const CAPY_ART = ["...........##.......","..........########..","..........#########.",".........####.######",
+  ".........###########","...#################","..##################",".###################","####################",
+  "##############......","#############.......",".###########........","..###....###........","..##.....##.........","..###....###........"];
+const CAPY_SVG = '<svg viewBox="0 0 20 15" shape-rendering="crispEdges" role="img" aria-label="Capivara">' +
+  CAPY_ART.map((row,y) => [...row].map((c,x) => c === "#" ? `<rect x="${x}" y="${y}" width="1.02" height="1.02"/>` : "").join("")).join("") + "</svg>";
+document.querySelectorAll(".capy").forEach(el => el.innerHTML = CAPY_SVG);
+
+/* ---------- Gestor -> Página dos jogadores ----------
+   A página dos jogadores pede o estado (capi-pronto) e o gestor responde.
+   O gabarito só é enviado depois de revelado. */
+function publish(){
+  if(!playerWindow || playerWindow.closed) return;
+  const q = question(), onAir = round.phase !== "idle";
+  playerWindow.postMessage({type:"capi-estado", state:{
+    theme: $("theme").textContent, counter: $("counter").textContent,
+    question: !q ? "Aguardem…" : onAir ? q.enunciado : "Preparem-se…",
+    options: q && onAir ? q.alternativas : [],
+    right: q && round.revealed ? "ABCD".indexOf(q.correta) : -1,
+    turn: gameOver ? "🏁 Fim de jogo!" : round.phase === "idle" ? "Preparem-se!" : $("turn").textContent,
+    color: $("turn").style.borderColor,
+    ranking: rankingHtml(), gameOver, buzzId, buzzName
+  }}, "*");
+}
+
+let seenBuzz = null, walkTimer;
+function showState(v){
+  $("vWait").textContent = "Passa ou Repassa";
+  $("vTheme").textContent = v.theme;
+  $("vCounter").textContent = v.counter;
+  $("vQuestion").textContent = v.question;
+  $("vOptions").innerHTML = v.options.map((alt,i) =>
+    `<div class="opt ${i === v.right ? "right" : ""}"><b>${"ABCD"[i]}</b>${esc(alt)}</div>`).join("");
+  $("vTurn").textContent = v.turn;
+  $("vTurn").style.borderColor = v.color;
+  $("vRankTitle").textContent = v.gameOver ? "🏁 Resultado final" : "🏆 Ranking";
+  $("vRanking").innerHTML = v.ranking;
+  if(seenBuzz !== null && v.buzzId > seenBuzz){
+    const w = $("walker");
+    w.querySelector("b").textContent = v.buzzName + " apertou primeiro!";
+    w.hidden = true; void w.offsetWidth; w.hidden = false;
+    clearTimeout(walkTimer);
+    walkTimer = setTimeout(() => w.hidden = true, 3000);
+  }
+  seenBuzz = v.buzzId;
+}
+
+window.addEventListener("message", e => {
+  if(IS_PLAYER_PAGE){
+    if(e.source === window.opener && e.data?.type === "capi-estado") showState(e.data.state);
+  }else if(e.data?.type === "capi-pronto" && e.source){
+    playerWindow = e.source; publish();
+  }
+});
+$("btnPlayerPage").onclick = () => {
+  const w = window.open(location.href.split("#")[0] + "#jogadores", "capiJogadores", "width=1100,height=700");
+  if(!w) alert("O navegador bloqueou a janela. Permita pop-ups para esta página.");
+};
+$("btnFull").onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+
+/* ---------- Jogadores ---------- */
+const normalize = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+
+function renderPlayers(){
+  const used = db.players.filter(p => p.id !== editingId).map(p => p.channel);
+  const free = [1,2,3,4].filter(n => !used.includes(n)).slice(0, MAX_CHANNELS);
+  $("pChannel").innerHTML = free.map(n => `<option value="${n}">Botão ${n}</option>`).join("") + '<option value="0">Sem botão</option>';
+  if(editingId) $("pChannel").value = player(editingId).channel;
+  $("pSave").textContent = editingId ? "Salvar" : "Adicionar";
+  $("pList").innerHTML = db.players.map(p => `
+    <div class="pl" style="border-left-color:${esc(p.color)}">
+      <span class="name">${esc(p.emoji)} ${esc(p.name)}</span>
+      <span class="hint">${p.channel ? "Botão " + p.channel : "Sem botão"}</span>
+      <button data-edit="${p.id}">Editar</button><button data-remove="${p.id}" class="red">Remover</button>
+    </div>`).join("") || '<p class="hint">Cadastre pelo menos 2 jogadores.</p>';
+  $("btnStart").disabled = db.players.length < 2;
+}
+function openPlayers(message){
+  editingId = null; $("pName").value = ""; $("pError").textContent = message || "";
+  renderPlayers();
+  if(!$("dlgPlayers").open) $("dlgPlayers").showModal();
+}
+/* Mudar o elenco no meio de uma rodada cancela a rodada */
+function rosterChanged(){
+  if(round.phase !== "idle"){ round = freshRound(); send("RESET"); }
+  save(); renderPlayers(); render();
+}
+
+$("pForm").onsubmit = e => {
+  e.preventDefault();
+  const name = $("pName").value.trim().replace(/\s+/g," ");
+  if(!name) return $("pError").textContent = "O nome não pode ficar vazio.";
+  if(db.players.some(p => p.id !== editingId && normalize(p.name) === normalize(name)))
+    return $("pError").textContent = "Já existe um jogador com esse nome.";
+  const data = {name, emoji:$("pEmoji").value, color:$("pColor").value, channel:Number($("pChannel").value)};
+  if(editingId) Object.assign(player(editingId), data);
+  else db.players.push({id:Date.now(), score:0, hits:0, ...data});
+  editingId = null; $("pName").value = ""; $("pError").textContent = "";
+  $("pEmoji").selectedIndex = db.players.length % $("pEmoji").options.length;
+  $("pColor").value = ["#ff2e88","#22d3ee","#22c55e","#ffd60a","#f97316","#a855f7"][db.players.length % 6];
+  rosterChanged();
+};
+$("pList").onclick = e => {
+  const {edit, remove} = e.target.dataset;
+  if(edit){
+    editingId = Number(edit);
+    const p = player(editingId);
+    $("pName").value = p.name; $("pEmoji").value = p.emoji; $("pColor").value = p.color;
+    renderPlayers(); $("pName").focus();
+  }
+  if(remove){
+    db.players = db.players.filter(p => p.id !== Number(remove));
+    if(editingId === Number(remove)){ editingId = null; $("pName").value = ""; }
+    rosterChanged();
+  }
+};
+$("btnPlayers").onclick = () => openPlayers();
+$("btnCloseP").onclick = () => $("dlgPlayers").close();
+$("btnStart").onclick = () => { $("dlgPlayers").close(); render(); };
+
+/* ---------- Perguntas ---------- */
+function validQuestion(q){
+  const alts = q?.alternativas;
+  const correct = String(q?.correta || "").trim().toUpperCase();
+  const text = v => typeof v === "string" && v.trim() !== "";
+  if(!q || !text(q.tema) || !text(q.enunciado) || !Array.isArray(alts) || alts.length !== 4 || !alts.every(text) || !/^[ABCD]$/.test(correct))
+    return null;
+  return Q(q.tema.trim(), q.enunciado.trim(), alts.map(a => a.trim()), correct);
+}
+function addQuestions(list){
+  const clean = list.map(validQuestion);
+  const bad = clean.findIndex(q => !q);
+  if(!list.length || bad >= 0) throw new Error(`Pergunta ${bad+1} inválida: preencha tema, enunciado, 4 alternativas e correta (A–D).`);
+  db.questions.push(...clean); save(); render();
+  $("qError").textContent = clean.length + " pergunta(s) adicionada(s).";
+}
+$("qForm").onsubmit = e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  try{ addQuestions([{tema:f.tema, enunciado:f.enunciado, alternativas:[f.a,f.b,f.c,f.d], correta:f.correta}]); e.target.reset(); }
+  catch(err){ $("qError").textContent = err.message; }
+};
+$("btnImport").onclick = () => {
+  try{ const d = JSON.parse($("json").value); addQuestions(Array.isArray(d) ? d : [d]); $("json").value = ""; }
+  catch(err){ $("qError").textContent = "Não importado. " + err.message; }
+};
+$("btnExportQ").onclick = () => $("json").value = JSON.stringify(db.questions, null, 2);
+$("btnGo").onclick = () => {
+  if(!db.questions.length) return;
+  db.index = Number($("qList").value); round = freshRound(); send("RESET"); save(); render();
+};
+$("btnDel").onclick = () => {
+  const i = Number($("qList").value);
+  if(!db.questions[i] || !confirm("Excluir esta pergunta?")) return;
+  db.questions.splice(i,1);
+  if(i < db.index) db.index--;
+  else if(i === db.index){ round = freshRound(); send("RESET"); }
+  db.index = Math.max(0, Math.min(db.index, db.questions.length-1));
+  save(); render();
+};
+
+/* ---------- Controles ---------- */
+$("btnPass").onclick = pass;
+$("btnRepass").onclick = repass;
+$("btnRight").onclick = () => answer(true);
+$("btnWrong").onclick = () => answer(false);
+$("btnAir").onclick = putOnAir;
+$("btnReveal").onclick = () => { if(round.phase !== "idle"){ round.revealed = true; render(); } };
+$("btnNext").onclick = nextQuestion;
+$("btnRedo").onclick = redoRound;
+$("btnEnd").onclick = endGame;
+$("pickTurn").onclick = e => { const b = e.target.closest("[data-turn]"); if(b) giveTurn(Number(b.dataset.turn)); };
+$("simButtons").onclick = e => { const b = e.target.closest("[data-sim]"); if(b) handleLine(b.dataset.sim, "SIM"); };
+$("btnZero").onclick = () => {
+  if(!confirm("Zerar o placar e voltar à primeira pergunta?")) return;
+  zeroScores();
+};
+$("btnCopy").onclick = e => copyResult(e.target);
+$("btnCopy2").onclick = e => copyResult(e.target);
+$("btnCsv").onclick = exportCsv;
+$("btnCloseE").onclick = () => $("dlgEnd").close();
+$("btnWipe").onclick = () => {
+  if(!confirm("Apagar jogadores, placares, perguntas e configurações?")) return;
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  db = defaults(); round = freshRound(); send("RESET"); loadConfig(); render(); openPlayers();
+};
+
+function loadConfig(){
+  $("cfgPoints").value = db.cfg.points; $("cfgPenalty").value = db.cfg.penalty;
+  $("cfgTime").value = db.cfg.time; $("cfgMulti").checked = db.cfg.multi; $("cfgSound").checked = db.cfg.sound; $("baud").value = db.cfg.baud;
+}
+["cfgPoints","cfgPenalty","cfgTime","cfgMulti","cfgSound","baud"].forEach(id => $(id).onchange = () => {
+  db.cfg = {
+    points:Math.max(1, parseInt($("cfgPoints").value) || 1),
+    penalty:Math.max(0, parseInt($("cfgPenalty").value) || 0),
+    time:Math.min(99, Math.max(0, parseInt($("cfgTime").value) || 0)),
+    multi:$("cfgMulti").checked, sound:$("cfgSound").checked, baud:$("baud").value
+  };
+  loadConfig(); save(); render();
+});
+
+$("btnConnect").onclick = () => port ? disconnect(false) : connect();
+$("sendForm").onsubmit = e => { e.preventDefault(); const v = $("sendInput").value.trim(); if(v) send(v); $("sendInput").value = ""; };
+$("btnClearLog").onclick = () => $("log").textContent = "";
+
+document.addEventListener("keydown", e => {
+  if(IS_PLAYER_PAGE || e.repeat || e.ctrlKey || e.metaKey || e.altKey || document.querySelector("dialog[open]")) return;
+  if(e.target.closest("input,textarea,select")) return;
+  const k = e.key.toLowerCase();
+  if(k === " " && e.target.closest("button,summary")) e.target.blur();
+  if(/^[1-4]$/.test(k)) handleLine("BTN:" + k, "TECLA");
+  else if(k === "p") pass();
+  else if(k === "r") repass();
+  else if(k === "c") answer(true);
+  else if(k === "e") answer(false);
+  else if(k === "n") nextQuestion();
+  else if(k === " "){ e.preventDefault(); $("btnReveal").click(); }
+});
+
+/* ---------- Início ---------- */
+function startManager(){
+  loadConfig();
+  render();
+  if("serial" in navigator){
+    listPorts();
+    navigator.serial.addEventListener("connect", () => { if(!port) listPorts(); });
+    navigator.serial.addEventListener("disconnect", e => { if(e.target === port) disconnect(true); else listPorts(); });
+  }else{
+    setStatus("Não suportado (use simulação)", "err");
+    $("btnConnect").disabled = $("ports").disabled = true;
+    log("Este navegador não tem Web Serial. Use Chrome ou Edge no computador.");
+  }
+  openPlayers();
+}
+function startPlayerPage(){
+  document.title = "Capi-Quest · Jogadores";
+  document.body.classList.add("player");
+  $("playerPage").hidden = false;
+  const ask = () => window.opener?.postMessage({type:"capi-pronto"}, "*");
+  if(!window.opener) $("vWait").textContent = "Abra esta página pelo botão da página do gestor.";
+  ask(); setInterval(ask, 1000);
+}
+window.addEventListener("hashchange", () => location.reload());
+if(IS_PLAYER_PAGE) startPlayerPage(); else startManager();
+</script>
+</body>
+</html>
